@@ -1,57 +1,35 @@
 #include <FFat.h>
 
-File userFile;    
-File passFile;   
-bool fileOpen = false; 
+File userFile;    // To keep track of the usernames file
+File passFile;    // To keep track of the passwords file
+bool fileOpen = false;  // Flag to track if a file is currently open
+
 void setup() {
   Serial.begin(115200);
-  delay(1000);  
-
-  Serial.println("Starting FFAT initialization...");
-
+  delay(1000);  // Delay to ensure serial connection is established
   if (!FFat.begin()) {
-    Serial.println("FFAT Mount Failed, attempting format...");
-
     if (!FFat.format()) {
-      Serial.println("FFAT Format Failed!");
       return;
     }
-
-    Serial.println("FFAT formatted successfully. Attempting to mount again...");
 
     if (!FFat.begin()) {
-      Serial.println("FFAT Mount Failed after formatting!");
       return;
     }
 
-    Serial.println("FFAT mounted successfully after formatting.");
   } else {
-    Serial.println("FFAT mounted successfully.");
   }
-
-  Serial.println("Ready to receive commands.");
-  Serial.println("Commands:");
-  Serial.println("iwanttowrite - Start the writing sequence");
-  Serial.println("iwanttoread - Placeholder for read functionality");
-  Serial.println("list - List all files");
-  Serial.println("read filename.extension - Read file contents");
 }
 
 void loop() {
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n');
-    command.trim();  
+    command.trim();  // Remove whitespace at start and end
 
     if (command == "iwanttowrite") {
       handleWriteSequence();
     } else if (command == "iwanttoread") {
-      Serial.println("Received command: iwanttoread");
-    } else if (command == "list") {
-      handleListCommand();
-    } else if (command.startsWith("read ")) {
-      handleReadCommand(command.substring(5));
+      handleReadSequence();
     } else {
-      Serial.println("Invalid command. Please use 'iwanttowrite', 'iwanttoread', 'list', or 'read filename.extension'.");
     }
   }
 }
@@ -73,20 +51,14 @@ void handleWriteSequence() {
         handleSite(site);
         handleUsername(username);
         handlePassword(password);
-      } else {
-        Serial.println("Password not received.");
       }
-    } else {
-      Serial.println("Username not received.");
     }
-  } else {
-    Serial.println("Site not received.");
   }
 }
 
 String waitForResponse(const String& expectedCommand) {
   unsigned long startTime = millis();
-  while (millis() - startTime < 10000) { 
+  while (millis() - startTime < 10000) {  
     if (Serial.available()) {
       String response = Serial.readStringUntil('\n');
       response.trim();
@@ -94,7 +66,6 @@ String waitForResponse(const String& expectedCommand) {
     }
     delay(100); 
   }
-  Serial.println(expectedCommand + " timeout.");
   return "";
 }
 
@@ -104,35 +75,30 @@ void handleSite(String site) {
 
   userFile = FFat.open(userFileName, FILE_APPEND);
   if (!userFile) {
-    Serial.println("Failed to open file for writing usernames.");
-    return;
+    return;  // Failed to open file
   }
 
   passFile = FFat.open(passFileName, FILE_APPEND);
   if (!passFile) {
-    Serial.println("Failed to open file for writing passwords.");
     userFile.close();
-    return;
+    return;  // Failed to open file
   }
 
-  fileOpen = true; 
-  Serial.println("File preparation complete.");
+  fileOpen = true;
 }
 
 void handleUsername(String username) {
   if (!fileOpen) {
-    Serial.println("No file is open. Please start by providing a site.");
     return;
   }
 
   userFile.print(username);
   userFile.print(";");
-  userFile.flush();  
+  userFile.flush(); 
 }
 
 void handlePassword(String password) {
   if (!fileOpen) {
-    Serial.println("No file is open. Please start by providing a site.");
     return;
   }
 
@@ -144,34 +110,81 @@ void handlePassword(String password) {
   fileOpen = false;
 }
 
-void handleListCommand() {
-  File root = FFat.open("/");
-  if (!root) {
-    Serial.println("Failed to open root directory.");
-    return;
-  }
+void handleReadSequence() {
+  Serial.println("iwantsitetoreaduser");
+  String site = waitForResponse("iwantsitetoreaduser");
 
-  Serial.println("Listing files:");
-  File file = root.openNextFile();
-  while (file) {
-    Serial.print("File: ");
-    Serial.println(file.name());
-    file = root.openNextFile();
+  if (site.length() > 0) {
+    String userFileName = "/" + site + "1.txt";
+    File userFile = FFat.open(userFileName);
+    if (!userFile) {
+      return; 
+    }
+
+    String userFileContent = "";
+    while (userFile.available()) {
+      userFileContent += (char)userFile.read();
+    }
+    userFile.close();
+    Serial.println(userFileContent);
+    String username = waitForResponse("Enter username to find");
+
+    if (username.length() > 0) {
+      // Find the position of the username in the user file content
+      int usernamePosition = findPosition(userFileContent, username);
+
+      if (usernamePosition != -1) {
+        // Read the password file
+        String passFileName = "/" + site + "2.txt";
+        File passFile = FFat.open(passFileName);
+        if (!passFile) {
+          return; 
+        }
+
+        // Read password file content
+        String passFileContent = "";
+        while (passFile.available()) {
+          passFileContent += (char)passFile.read();
+        }
+        passFile.close();
+
+        // Extract and send the password
+        String password = extractPassword(passFileContent, usernamePosition);
+        Serial.println(password);
+      }
+    }
   }
-  root.close();
 }
 
-void handleReadCommand(String filename) {
-  File file = FFat.open("/" + filename);
-  if (!file) {
-    Serial.println("Failed to open file for reading: " + filename);
-    return;
+int findPosition(const String& content, const String& username) {
+  int position = 0;
+  int startIndex = 0;
+  int endIndex;
+
+  while ((endIndex = content.indexOf(';', startIndex)) != -1) {
+    String entry = content.substring(startIndex, endIndex);
+    if (entry == username) {
+      return position;
+    }
+    startIndex = endIndex + 1;
+    position++;
   }
 
-  Serial.println("Reading file:");
-  while (file.available()) {
-    Serial.write(file.read());
+  return -1;
+}
+
+String extractPassword(const String& content, int position) {
+  int startIndex = 0;
+  int endIndex;
+  int currentIndex = 0;
+
+  while ((endIndex = content.indexOf(';', startIndex)) != -1) {
+    if (currentIndex == position) {
+      return content.substring(startIndex, endIndex);
+    }
+    startIndex = endIndex + 1;
+    currentIndex++;
   }
-  file.close();
-  Serial.println("\nFile read complete.");
+
+  return "";
 }
