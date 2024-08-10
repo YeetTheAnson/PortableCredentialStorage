@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Field Detector",
-  "version": "1.1",
-  "description": "Detects and records user input in name and password fields.",
-  "permissions": ["activeTab", "scripting"],
+  "version": "1.2",
+  "description": "Detects and records user input in name and password fields. Allows connection to serial devices.",
+  "permissions": ["activeTab", "scripting", "tabs"],
   "background": {
     "service_worker": "background.js"
   },
@@ -16,5 +16,6 @@
   "action": {
     "default_title": "Field Detector",
     "default_popup": "popup.html"
-  }
+  },
+  "host_permissions": ["<all_urls>"]
 }
