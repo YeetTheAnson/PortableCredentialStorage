@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Password Detector</title>
+    <title>Portable Credential Manager</title>
     <link rel="stylesheet" type="text/css" href="styles.css">
-    <script src="popup.js" defer></script>
 </head>
 <body>
-    <h1>Password Detector</h1>
-    <p>Connect your PortableCredentialManager</p>
-    <p style="color: gray;">This will open a new tab.</p>
-    <button id="openTabButton">Open Connection Page</button>
+    <h1>Connect to your PortableCredentialManager</h1>
+    <select id="port-list">
+        <option value="">Select a COM port</option>
+    </select>
+    <button id="connect-button">Connect</button>
+
+    <script src="popup.js"></script>
 </body>
 </html>
