@@ -3,7 +3,7 @@ import serial
 import websockets
 
 # Serial port configuration
-SERIAL_PORT = 'COM8'
+SERIAL_PORT = 'COMX'
 BAUD_RATE = 115200
 
 # WebSocket server configuration

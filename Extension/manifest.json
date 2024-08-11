@@ -1,21 +1,28 @@
 {
     "manifest_version": 3,
-    "name": "Field Detector",
+    "name": "PortableCredentialManager",
     "version": "1.1",
-    "description": "Detects and records user input in name and password fields.",
-    "permissions": ["activeTab", "scripting"],
+    "description": "Automatically stores credentials typed in, and can fetch credentials from ESP32-S2.",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "webRequest",
+        "webRequestBlocking",
+        "tabs"
+    ],
     "background": {
-      "service_worker": "background.js"
     },
     "content_scripts": [
-      {
-        "matches": ["<all_urls>"],
-        "js": ["content.js"]
-      }
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content.js"]
+        }
     ],
     "action": {
-      "default_title": "Field Detector",
-      "default_popup": "popup.html"
-    }
-  }
-  
+        "default_title": "PortableCredentialManager",
+        "default_popup": "popup.html"
+    },
+    "host_permissions": [
+        "*://*/*"
+    ]
+}

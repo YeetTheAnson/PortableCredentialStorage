@@ -5,7 +5,13 @@
     <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body>
-    <h1>Password Detector</h1>
-    <p>This extension detects when you type in a password field.</p>
+    <h1>PortableCredentialManager</h1>
+    <p>Automatically stores credentials typed in, and can fetch credentials from ESP32-S2.</p>
+    <button id="request-username">Request Username</button>
+    <div id="username-list" style="display: none;">
+        <p>Select a username:</p>
+        <div id="scrollable-username-list"></div>
+    </div>
+    <script src="popup.js"></script>
 </body>
 </html>
