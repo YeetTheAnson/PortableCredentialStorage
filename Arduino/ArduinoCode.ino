@@ -1,11 +1,39 @@
 #include <FFat.h>
+#include <USBHIDKeyboard.h>
+#define GPIO0_PIN 0  // GPIO0 pin
+USBHIDKeyboard keyboard;
+
 
 File userFile;    // To keep track of the usernames file
 File passFile;    // To keep track of the passwords file
 bool fileOpen = false;  // Flag to track if a file is currently open
 
+
+void sendUsernameWhenButtonPressed(const String& usernameforfunc) {
+  while (digitalRead(GPIO0_PIN) == HIGH) {
+    // Wait until GPIO0 is low
+    delay(10);  // Short delay to avoid busy-waiting
+  }
+
+  // Send the message
+  keyboard.print(usernameforfunc);
+  delay(500);  // Simple debounce and rate limit
+}
+
+void sendPasswordWhenButtonPressed(const String& passwordforfunc) {
+  while (digitalRead(GPIO0_PIN) == HIGH) {
+    // Wait until GPIO0 is low
+    delay(10);  // Short delay to avoid busy-waiting
+  }
+
+  // Send the message
+  keyboard.print(passwordforfunc);
+  delay(500);  // Simple debounce and rate limit
+}
+
 void setup() {
   Serial.begin(115200);
+
   delay(1000);  // Delay to ensure serial connection is established
   if (!FFat.begin()) {
     if (!FFat.format()) {
@@ -18,6 +46,8 @@ void setup() {
 
   } else {
   }
+  pinMode(GPIO0_PIN, INPUT_PULLUP); // Set GPIO0 as input with pull-up resistor
+  keyboard.begin();  // Initialize USB Keyboard
 }
 
 void loop() {
@@ -151,6 +181,8 @@ void handleReadSequence() {
         // Extract and send the password
         String password = extractPassword(passFileContent, usernamePosition);
         Serial.println(password);
+        sendUsernameWhenButtonPressed(username);
+        sendPasswordWhenButtonPressed(password);
       }
     }
   }
