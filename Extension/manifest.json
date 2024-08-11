@@ -1,20 +1,21 @@
 {
-  "manifest_version": 3,
-  "name": "Field Detector",
-  "version": "1.1",
-  "description": "Detects and records user input in name and password fields.",
-  "permissions": ["activeTab", "scripting"],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+    "manifest_version": 3,
+    "name": "Field Detector",
+    "version": "1.1",
+    "description": "Detects and records user input in name and password fields.",
+    "permissions": ["activeTab", "scripting"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["content.js"]
+      }
+    ],
+    "action": {
+      "default_title": "Field Detector",
+      "default_popup": "popup.html"
     }
-  ],
-  "action": {
-    "default_title": "Field Detector",
-    "default_popup": "popup.html"
   }
-}
+  

