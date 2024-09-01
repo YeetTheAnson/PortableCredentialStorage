@@ -80,7 +80,7 @@ function resetTypingTimer() {
     typingTimer = setTimeout(finalizeData, 5000);
 }
 
-// Event listener for input fields
+// Listener for input fields
 document.addEventListener('input', (event) => {
     if (event.target.type === 'text' && event.target.name.toLowerCase().includes('name')) {
         updateData('name', event.target.value);
@@ -90,10 +90,10 @@ document.addEventListener('input', (event) => {
     resetTypingTimer(); // Reset the timer on each input event
 }, true);
 
-// Event listener for blur event
+// Listener for blur event
 document.addEventListener('blur', (event) => {
     if ((event.target.type === 'text' && event.target.name.toLowerCase().includes('name')) ||
         event.target.type === 'password') {
-        resetTypingTimer(); // Ensure the timer is reset when user leaves the input field
+        resetTypingTimer(); // Timer is reset when user leaves the input field
     }
 }, true);
